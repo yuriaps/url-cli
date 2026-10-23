@@ -3,12 +3,18 @@
   "version": "1.1.5",
   "description": "URL encode & decode a string, right from your terminal.",
   "license": "MIT",
-  "repository": "k4m4/url-cli",
+  "repository": "yuriaps/url-cli",
   "author": {
-    "name": "Nikolaos Kamarinakis",
-    "url": "https://nikolaskama.me",
-    "email": "nikolaskam@gmail.com"
+    "name": "Yuri Lihomanof",
+    "url": "https://github.com/yuriaps"
   },
+  "contributors": [
+    {
+      "name": "Nikolaos Kamarinakis",
+      "url": "https://nikolaskama.me",
+      "email": "nikolaskam@gmail.com"
+    }
+  ],
   "bin": {
     "url": "cli.js",
     "urlencode": "cli.js"

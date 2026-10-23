@@ -11,9 +11,29 @@ function url (args, stdin) {
 }
 
 test('url encoding', () => {
-	const {stdout, status} = url(['just 4n0ther $tr1ng'])
+	const {stdout, status} = url(['!@#$%^&*()_+1234567890-=qwertyuiop[]\\|}{POIUYTREWQasdfghjkl;\'\":?/.>,<mnbvcxz'])
 	assert.strictEqual(status, 0)
-	assert.strictEqual(stdout.trim(), encodeURIComponent('just 4n0ther $tr1ng'))
+	assert.strictEqual(stdout.trim(), '!%40%23$%25^%26*()_%2b1234567890-%3dqwertyuiop[]\\|}{POIUYTREWQasdfghjkl%3b\'\"%3a%3f/.>,<mnbvcxz')
+})
+
+test('-A encodes all characters, including spaces', () => {
+	const {stdout, status} = url(['-A', '~ola a b.*'])
+	assert.strictEqual(status, 0)
+	assert.strictEqual(stdout.trim(), '%7e%6f%6c%61%20%61%20%62%2e%2a')
+	assert.strictEqual(url(['--all'], 'ç\n').stdout, '%c3%a7\n')
+})
+
+test('default only encodes key characters and non-ASCII', () => {
+	const symbols = "a b~!'()*-._ç"
+	assert.strictEqual(url([], symbols).stdout, "a+b~!'()*-._%c3%a7")
+	assert.strictEqual(url(['-d'], url([], symbols).stdout).stdout, symbols)
+	assert.strictEqual(url(['-d', '-A'], url(['-A'], symbols).stdout).stdout, symbols)
+})
+
+test('literal + is still escaped so it round-trips', () => {
+	assert.strictEqual(url([], 'a+b c').stdout, 'a%2bb+c')
+	assert.strictEqual(url(['-d'], 'a%2bb+c').stdout, 'a+b c')
+	assert.strictEqual(url(['-d', '-A'], 'a+b').stdout, 'a+b')
 })
 
 test('url decoding', () => {
@@ -42,8 +62,8 @@ test('unknown flags are rejected', () => {
 })
 
 test('stdin trailing newline is preserved, not added', () => {
-	assert.strictEqual(url([], 'a b').stdout, 'a%20b')
-	assert.strictEqual(url([], 'a b\n').stdout, 'a%20b\n')
+	assert.strictEqual(url([], 'a b').stdout, 'a+b')
+	assert.strictEqual(url([], 'a b\n').stdout, 'a+b\n')
 	assert.strictEqual(url(['-d'], 'a%20b').stdout, 'a b')
-	assert.strictEqual(url([], ' a ').stdout, '%20a%20')
+	assert.strictEqual(url(['-A'], ' a ').stdout, '%20%61%20')
 })
