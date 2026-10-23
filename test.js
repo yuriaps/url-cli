@@ -40,3 +40,10 @@ test('unknown flags are rejected', () => {
 	const {status} = url(['--nope', 'x'])
 	assert.strictEqual(status, 2)
 })
+
+test('stdin trailing newline is preserved, not added', () => {
+	assert.strictEqual(url([], 'a b').stdout, 'a%20b')
+	assert.strictEqual(url([], 'a b\n').stdout, 'a%20b\n')
+	assert.strictEqual(url(['-d'], 'a%20b').stdout, 'a b')
+	assert.strictEqual(url([], ' a ').stdout, '%20a%20')
+})

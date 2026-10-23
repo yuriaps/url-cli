@@ -59,9 +59,9 @@ function URLDecode (text) {
 	}
 }
 
-function display (text) {
+function display (text, eol) {
 	if (text !== null) {
-		console.log(text)
+		process.stdout.write(text + eol)
 	} else {
 		const leading = flags.plain ? '' : `${errorSymbol} `
 		console.log(leading + 'Ciphertext doesn\'t seem to be URL-encoded')
@@ -69,9 +69,13 @@ function display (text) {
 	}
 }
 
-function run (text) {
-	text = text.trim()
-	display(flags.decode ? URLDecode(text) : encodeURIComponent(text))
+// Only the trailing line break is stripped, and it is echoed back as-is so
+// `echo -n x | url` prints no newline while `echo x | url` prints one
+function run (text, eol) {
+	const match = text.match(/\r?\n$/)
+	if (eol === undefined) eol = match ? match[0] : ''
+	if (match) text = text.slice(0, -match[0].length)
+	display(flags.decode ? URLDecode(text) : encodeURIComponent(text), eol)
 }
 
 function readStdin () {
@@ -89,7 +93,7 @@ if (!input && process.stdin.isTTY) {
 	process.exit(1)
 }
 if (input) {
-	run(input)
+	run(input, '\n')
 } else {
-	readStdin().then(run)
+	readStdin().then(text => run(text))
 }
