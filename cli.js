@@ -1,61 +1,87 @@
 #!/usr/bin/env node
 'use strict'
-const meow       = require('meow')
-const getStdin   = require('get-stdin')
-const logSymbols = require('log-symbols')
+const {parseArgs} = require('node:util')
+const pkg         = require('./package.json')
 
-const cli = meow(`
-	Usage
-	  ~ ❯❯❯ url [string]
-	  ~ ❯❯❯ echo [string] | url
-	Options
-		-d, --decode  Decode URL encoded string
-		-p, --plain   Display output without log symbols
-	Examples
-	  ~ ❯❯❯ url "just 4n0ther URL enc0d3d $tr1ng"
-	  ${logSymbols.success} just%204n0ther%20URL%20enc0d3d
-	  ~ ❯❯❯ url -d url%E2%80%93encoded%20string
-	  ${logSymbols.success} url–encoded string
-`, {
-	flags: {
-		decode: {
-			type: 'boolean',
-			alias: 'd',
-			default: false
-		},
-		plain: {
-			type: 'boolean',
-			alias: 'p',
-			default: false
+const errorSymbol = process.stdout.isTTY && !process.env.NO_COLOR ? '\u001B[31m✖\u001B[39m' : '✖'
+
+const help = `
+  ${pkg.description}
+
+  Usage
+    ~ ❯❯❯ url [string]
+    ~ ❯❯❯ echo [string] | url
+  Options
+    -d, --decode  Decode URL encoded string
+    -p, --plain   Display output without log symbols
+  Examples
+    ~ ❯❯❯ url "just 4n0ther URL enc0d3d $tr1ng"
+    just%204n0ther%20URL%20enc0d3d%20%24tr1ng
+    ~ ❯❯❯ url -d url%E2%80%93encoded%20string
+    url–encoded string
+`
+
+let cli
+try {
+	cli = parseArgs({
+		allowPositionals: true,
+		options: {
+			decode:  {type: 'boolean', short: 'd', default: false},
+			plain:   {type: 'boolean', short: 'p', default: false},
+			help:    {type: 'boolean', short: 'h', default: false},
+			version: {type: 'boolean', short: 'v', default: false}
 		}
-	}
-});
-
-const input = cli.input[0]
-
-function URLEncode (text) {
-	return encodeURIComponent(text)
+	})
+} catch (error) {
+	console.error(error.message)
+	console.error(help)
+	process.exit(2)
 }
 
-function URLEncodedRegex (ciphertext) {
-  const re = '(?:[^%]|%[0-9A-Fa-f]{2})+'
-	if ((ciphertext ? new RegExp('(?:^' + re + '$)') : new RegExp(re, 'g')).test(ciphertext)) return true
-	else return false
+const flags = cli.values
+const input = cli.positionals[0]
+
+if (flags.help) {
+	console.log(help)
+	process.exit(0)
+}
+if (flags.version) {
+	console.log(pkg.version)
+	process.exit(0)
 }
 
 function URLDecode (text) {
-  if (URLEncodedRegex(text)) return decodeURIComponent(text)
-  else return 'Ciphertext doesn\'t seem to be URL-encoded'
+	try {
+		return decodeURIComponent(text)
+	} catch (_) {
+		// Malformed escape sequences (e.g. "%zz", "%E0") are not valid URL encoding
+		return null
+	}
 }
 
-function display (plaintext) {
-	if (plaintext != 'Ciphertext doesn\'t seem to be URL-encoded') {
-		console.log(plaintext)
+function display (text) {
+	if (text !== null) {
+		console.log(text)
 	} else {
-		const leading = (cli.flags["plain"]) ? `` : `${logSymbols.error} `
-		console.log(leading + `Ciphertext doesn\'t seem to be URL-encoded`)
-		process.exit(1);
+		const leading = flags.plain ? '' : `${errorSymbol} `
+		console.log(leading + 'Ciphertext doesn\'t seem to be URL-encoded')
+		process.exit(1)
 	}
+}
+
+function run (text) {
+	text = text.trim()
+	display(flags.decode ? URLDecode(text) : encodeURIComponent(text))
+}
+
+function readStdin () {
+	return new Promise((resolve, reject) => {
+		let data = ''
+		process.stdin.setEncoding('utf8')
+		process.stdin.on('data', chunk => { data += chunk })
+		process.stdin.on('end', () => resolve(data))
+		process.stdin.on('error', reject)
+	})
 }
 
 if (!input && process.stdin.isTTY) {
@@ -63,17 +89,7 @@ if (!input && process.stdin.isTTY) {
 	process.exit(1)
 }
 if (input) {
-	if (cli.flags["decode"]) {
-		display(URLDecode(input.trim()))
-	} else {
-		display(URLEncode(input.trim()))
-	}
+	run(input)
 } else {
-	getStdin().then(stdin => {
-		if (cli.flags["decode"]) {
-			display(URLDecode(stdin.trim()))
-		} else {
-			display(URLEncode(stdin.trim()))
-		}
-	})
+	readStdin().then(run)
 }

@@ -11,6 +11,11 @@
 ```
 
 
+## Requirements
+
+Node.js 20 or newer. No runtime dependencies.
+
+
 ## Usage
 
 ```
@@ -20,13 +25,13 @@
     ~ ❯❯❯ url [string]
     ~ ❯❯❯ echo [string] | url
   Options
-        -d, --decode  Decode URL encoded string
-        -p, --plain   Display output without log symbols
+    -d, --decode  Decode URL encoded string
+    -p, --plain   Display output without log symbols
   Examples
-    ~ ❯❯❯ url "just 4n0ther URL enc0d3d $tr1ng"  
-    ✔ just%204n0ther%20URL%20enc0d3d
+    ~ ❯❯❯ url "just 4n0ther URL enc0d3d $tr1ng"
+    just%204n0ther%20URL%20enc0d3d%20%24tr1ng
     ~ ❯❯❯ url -d url%E2%80%93encoded%20string
-    ✔ url–encoded string
+    url–encoded string
 ```
 
 
